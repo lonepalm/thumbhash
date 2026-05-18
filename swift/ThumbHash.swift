@@ -557,6 +557,7 @@ func thumbHashToImage(hash: Data) -> NSImage {
 
 #if os(iOS)
 import UIKit
+import Accelerate
 
 func imageToThumbHash(image: UIImage) -> Data {
   let size = image.size
@@ -610,26 +611,17 @@ func imageToThumbHash(image: UIImage) -> Data {
 func thumbHashToImage(hash: Data) -> UIImage {
   var (w, h, rgba) = thumbHashToRGBA(hash: hash)
   rgba.withUnsafeMutableBytes { rgba in
-    // Convert from unpremultiplied alpha to premultiplied alpha
-    var rgba = rgba.baseAddress!.bindMemory(to: UInt8.self, capacity: rgba.count)
-    let n = w * h
-    var i = 0
-    while i < n {
-      let a = UInt16(rgba[3])
-      if a < 255 {
-        var r = UInt16(rgba[0])
-        var g = UInt16(rgba[1])
-        var b = UInt16(rgba[2])
-        r = min(255, r * a / 255)
-        g = min(255, g * a / 255)
-        b = min(255, b * a / 255)
-        rgba[0] = UInt8(r)
-        rgba[1] = UInt8(g)
-        rgba[2] = UInt8(b)
-      }
-      rgba = rgba.advanced(by: 4)
-      i += 1
-    }
+    guard let ptr = rgba.baseAddress else { return }
+    
+    var buffer = vImage_Buffer(
+      data: ptr,
+      height: vImagePixelCount(h),
+      width: vImagePixelCount(w),
+      rowBytes: w * 4
+    )
+    
+    // Convert from unpremultiplied alpha to premultiplied alpha using vImage
+    vImagePremultiplyData_RGBA8888(&buffer, &buffer, vImage_Flags(kvImageNoFlags))
   }
   let image = CGImage(
     width: w,
