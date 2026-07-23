@@ -559,7 +559,7 @@ func thumbHashToImage(hash: Data) -> NSImage {
 import UIKit
 import Accelerate
 
-func imageToThumbHash(image: UIImage) -> Data {
+public func imageToThumbHash(image: UIImage) -> Data {
   let size = image.size
   let w = Int(round(100 * size.width / max(size.width, size.height)))
   let h = Int(round(100 * size.height / max(size.width, size.height)))
@@ -608,7 +608,7 @@ func imageToThumbHash(image: UIImage) -> Data {
   return rgbaToThumbHash(w: w, h: h, rgba: rgba)
 }
 
-func thumbHashToImage(hash: Data) -> UIImage {
+public func thumbHashToImage(hash: Data) -> UIImage {
   var (w, h, rgba) = thumbHashToRGBA(hash: hash)
   rgba.withUnsafeMutableBytes { rgba in
     guard let ptr = rgba.baseAddress else { return }
